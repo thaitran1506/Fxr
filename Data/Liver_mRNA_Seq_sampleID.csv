@@ -1,0 +1,21 @@
+sample,Sample ID,Mouse ID,Cohort,Phenotype ,Sex,Diet ,overall alignment rate
+sample1,L31,31,2,WT,F,HFD,90
+sample2,L32,32,2,WT,F,HFD,90.54
+sample3,L33,33,2,WT,F,HFD,89.29
+sample4,L34,34,2,WT,M,HFD,87.4
+sample5,L35,35,2,WT,M,HFD,85.15
+sample6,L37,37,2,Liver KO,F,HFD,82.11
+sample7,L38,38,2,Liver KO,F,HFD,86.57
+sample8,L39,39,2,Liver KO,F,HFD,89.71
+sample9,L40,40,2,Liver KO,M,HFD,88.07
+sample10,L41,41,2,Liver KO,M,HFD,91.21
+sample11,L46,46,2,WT,F,HFD_XN,90.43
+sample12,L47,47,2,WT,F,HFD_XN,89.56
+sample13,L48,48,2,WT,F,HFD_XN,87.51
+sample14,L49,49,2,WT,M,HFD_XN,89.97
+sample15,L50,50,2,WT,M,HFD_XN,89.39
+sample16,L53,53,2,Liver KO,F,HFD_XN,89.55
+sample17,L54,54,2,Liver KO,F,HFD_XN,88.12
+sample18,L55,55,2,Liver KO,F,HFD_XN,86.11
+sample19,L56,56,2,Liver KO,M,HFD_XN,94.82
+sample20,L57,57,2,Liver KO,M,HFD_XN,94.33
