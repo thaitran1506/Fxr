@@ -1,0 +1,231 @@
+```{r}
+sol = read.csv("sol-de-table-0.01c.csv", stringsAsFactors = FALSE, header = TRUE)
+tib = read.csv("tib-de-table-0.01c.csv", stringsAsFactors = FALSE, header = TRUE)
+```
+
+```{r}
+row.names(sol) = sol$Symbol
+row.names(tib) = tib$Symbol
+```
+
+
+```{r}
+colnames(sol)[1] = c("Symbol")
+colnames(tib)[1] = c("Symbol")
+```
+
+
+```{r}
+shared = c()
+for(gene in sol$Symbol){
+  if(gene %in% tib$Symbol){
+    shared = c(gene, shared)
+  }
+}
+length(shared)
+```
+
+There are 491 shared DE genes between Soleus and tibialis. 
+
+
+
+```{r}
+shared_gene_df = data.frame(shared)
+colnames(shared_gene_df) = c("Symbol")
+```
+
+```{r}
+shared_gene_df$logFC_sol = sol[shared,2]
+shared_gene_df$logFC_tib = tib[shared,2]
+head(shared_gene_df)
+```
+
+```{r}
+shared_gene_df$average_logFC = (shared_gene_df$logFC_sol + shared_gene_df$logFC_tib)/2
+head(shared_gene_df)
+```
+
+```{r}
+row.names(shared_gene_df) = shared_gene_df$Symbol
+```
+
+```{r}
+write.csv(shared_gene_df, "shared de genes.csv")
+```
+
+
+Reactome pathway analysis
+
+```{r}
+library(ReactomePA)
+library(clusterProfiler)
+library(ggplot2)
+library(tidyverse)
+```
+
+Function to get entrezID from symbol
+Parameter:
+  data: dataframe with gene symbol as row.names.
+  keys: vector of symbols
+```{r}
+symbol_entrezID = function(data, keys){
+  require(org.Mm.eg.db)
+  require(tidyr)
+  hash.table = drop_na(AnnotationDbi::select(org.Mm.eg.db,
+                                   keys = keys,
+                                   keytype = "SYMBOL",
+                                   columns = "ENTREZID"))
+  hash.table = drop_na(hash.table)
+  data_subset = data[hash.table$SYMBOL, ]
+  data_subset$EntrezID = as.character(hash.table$ENTREZID)
+  data_subset$Symbol = row.names(data_subset)
+  row.names(data_subset) = data_subset$EntrezID
+  
+  
+  return(data_subset)
+}
+```
+
+```{r}
+de_genes_entrezID = symbol_entrezID(shared_gene_df, keys = row.names(shared_gene_df))
+head(de_genes_entrezID)
+```
+
+
+only 476 genes have entrez_ID
+
+Read in the read count table to get the universal background gene
+```{r}
+data = read.csv("Sol_MCK_relabeled.txt", header = TRUE, stringsAsFactors = FALSE, sep = "\t", row.names = 1)
+head(data)
+```
+```{r}
+gene_universe = data.frame(row.names(data))
+colnames(gene_universe)[1] = c("Symbol")
+row.names(gene_universe) = gene_universe$Symbol
+head(gene_universe)
+```
+```{r}
+gene_universe$holder = rep("x", length(gene_universe$Symbol))
+```
+
+
+```{r}
+gene_universe = symbol_entrezID(gene_universe, keys = row.names(gene_universe))
+head(gene_universe)
+```
+```{r}
+universe_entrezID = gene_universe$EntrezID
+```
+
+
+
+```{r}
+#Feature 1: numeric vector
+genelist_y = de_genes_entrezID$average_logFC
+#Feature 2: named vector
+names(genelist_y) = as.character(de_genes_entrezID$EntrezID)
+#feature 3: decreasing order
+genelist = sort(genelist_y, decreasing = TRUE)
+head(genelist)
+```
+
+
+```{r}
+de_gene = names(genelist)
+```
+
+```{r}
+enrich_y = enrichPathway(gene = de_gene, pvalueCutoff = 0.05, readable = T, organism = "mouse", universe = universe_entrezID)
+head(as.data.frame(enrich_y))
+```
+
+
+```{r}
+reactome = as.data.frame(enrich_y)
+```
+
+```{r}
+heatplot(enrich_y, foldChange = genelist_y) + scale_fill_distiller(type = "div", palette = "RdBu", direction = -1)
+ggsave("reactomePA.png", height = 7, width = 28)
+```
+
+```{r}
+reactome = heatplot(enrich_y, foldChange = genelist_y) + scale_fill_gradient(low = "red", high = "blue")
+```
+
+
+```{r}
+shared_gene_df$is_met = sol[shared, 7]
+head(shared_gene_df)
+```
+
+```{r}
+metabolic_df = shared_gene_df[shared_gene_df$is_met == "Y",]
+length(metabolic_df$Symbol)
+```
+
+```{r}
+write.csv(metabolic_df, "shared metabolic genes.csv")
+```
+
+```{r}
+row.names(metabolic_df) = c(1:131)
+```
+
+```{r}
+metabolic_1_fold = metabolic_df[abs(metabolic_df$average_logFC) >= 1, ]
+```
+
+```{r}
+library(pheatmap)
+library(RColorBrewer)
+```
+
+```{r}
+
+jpeg("heat map of shared met genes.jpeg", width = 700, height = 2100)
+pheatmap(metabolic_df_2, treeheight_row = 0, treeheight_col = 0, color = colorRampPalette(rev(brewer.pal(10, "RdYlBu")))(30), fontsize_number = 1.5, cluster_rows = F)
+dev.off()
+```
+
+```{r}
+heatmap = pheatmap(metabolic_1_fold[,c(2,3)], treeheight_row = 0, treeheight_col = 0, color = colorRampPalette(rev(brewer.pal(10, "RdYlBu")))(30), fontsize_number = 1.5)
+```
+```{r}
+str(heatmap)
+```
+
+```{r}
+
+```
+
+```{r}
+metabolic_df_2 = metabolic_1_fold[rev(heatmap$tree_row$order),]
+```
+
+```{r}
+row.names(metabolic_df_2) = metabolic_df_2$Symbol
+```
+
+```{r}
+
+jpeg("heatmap shared met genes cutoff 2 fold.jpeg", width = 1000, height = 3000)
+pheatmap(metabolic_df_2[,c(2,3)], treeheight_row = 0, treeheight_col = 0, color = colorRampPalette(rev(brewer.pal(10, "RdBu")))(30), fontsize = 30, cluster_rows = F)
+dev.off()
+```
+```{r}
+write.csv(metabolic_1_fold, "shared met genes log2FC 1.csv")
+```
+
+
+```{r}
+order_met_genes = read.csv("shared met genes log2FC 1.csv", stringsAsFactors = FALSE, row.names = 1)
+head(order_met_genes)
+```
+```{r}
+
+jpeg("heatmap shared met genes cutoff 2 fold.jpeg", width = 1000, height = 3000)
+pheatmap(order_met_genes[,c(2,3)], treeheight_row = 0, treeheight_col = 0, color = colorRampPalette(rev(brewer.pal(10, "RdBu")))(30), fontsize = 30, cluster_rows = F)
+dev.off()
+```
