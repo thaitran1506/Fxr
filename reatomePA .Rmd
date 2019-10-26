@@ -1,11 +1,11 @@
 ```{r}
-setwd("~/Desktop/FXR analysis/Fxr/Data")
+setwd("~/Desktop/FXR/Fxr/Data")
 HFD = read.csv("Liver KO vs WT HFD.csv", stringsAsFactors = FALSE, header = TRUE)
 #tib = read.csv("tib-de-table-0.01c.csv", stringsAsFactors = FALSE, header = TRUE)
 ```
 
 ```{r}
-row.names(HFD) = HFD$X
+row.names(HFD) = HFD$Symbol
 ```
 
 
@@ -16,7 +16,7 @@ colnames(HFD)[1] = c("Symbol")
 ```
 
 ```{r}
-HFD = HFD[, c(1,3)]
+HFD = HFD[, c(8,3)]
 ```
 
 
@@ -58,12 +58,12 @@ head(de_genes_entrezID)
 ```
 
 
-only 1028 genes have entrez_ID
+only 1002 genes have entrez_ID
 
 Read in the read count table to get the universal background gene
 ```{r}
-setwd("~/Desktop/FXR analysis/Fxr/Data")
-data = na.omit(read.csv("gene_count.csv", header = TRUE, stringsAsFactors = FALSE, sep = ","))
+setwd("~/Desktop/FXR/Fxr/Data")
+data = na.omit(read.csv("gene count.csv", header = TRUE, stringsAsFactors = FALSE, sep = ",", row.names = 1))
 head(data)
 ```
 
@@ -78,10 +78,10 @@ ensembl_entrezID = function(data, keys){
   hash.table = drop_na(AnnotationDbi::select(org.Mm.eg.db,
                                    keys = keys,
                                    keytype = "ENSEMBL",
-                                   columns = "SYMBOL"))
+                                   columns = "ENTREZID"))
   #hash.table = drop_na(hash.table)
   data_subset = data[hash.table$ENSEMBL, ]
-  data_subset$EntrezID = as.character(hash.table$SYMBOL)
+  data_subset$EntrezID = as.character(hash.table$ENTREZID)
   data_subset$Ensembl = row.names(data_subset)
   #row.names(data_subset) = data_subset$EntrezID
   
@@ -96,6 +96,7 @@ colnames(gene_universe)[1] = c("Symbol")
 row.names(gene_universe) = gene_universe$Symbol
 head(gene_universe)
 ```
+
 ```{r}
 gene_universe$holder = rep("x", length(gene_universe$Symbol))
 ```
@@ -106,8 +107,22 @@ a = row.names(gene_universe)
 ```
 
 ```{r}
-gene_universe = ensembl_entrezID(data, keys = row.names(data))
-gene_universe[gene_universe$EntrezID=="a",]
+gene_universe = ensembl_entrezID(gene_universe, keys = row.names(gene_universe))
+
+```
+
+
+```{r}
+gene_count = data[gene_universe$X, ]
+
+```
+
+```{r}
+gene_count = gene_count[,-1]
+```
+
+```{r}
+write.csv(gene_count, "gene count.csv")
 ```
 
 ```{r}

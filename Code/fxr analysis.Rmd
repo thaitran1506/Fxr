@@ -1,6 +1,6 @@
 ```{r}
-setwd("~/Desktop/FXR analysis/Fxr/Data")
-fxr_data = na.omit(read.csv("gene count matrix.csv", header = TRUE, stringsAsFactors = FALSE))
+setwd("~/Desktop/FXR/Fxr/Data")
+fxr_data = na.omit(read.csv("gene count.csv", header = TRUE, stringsAsFactors = FALSE, row.names = 1))[,-c(11)]
 head(fxr_data)
 ```
 
@@ -17,13 +17,13 @@ head(fxr_data)
 
 
 ```{r}
-setwd("~/Desktop/FXR analysis/Fxr/Data")
+setwd("~/Desktop/FXR/Fxr/Data")
 design_file = read.csv("Liver_mRNA_Seq_sampleID.csv", stringsAsFactors = FALSE, row.names = 1)
 head(design_file)
 ```
 
 ```{r}
-metadata = design_file[,c(4:6)]
+metadata = design_file[-c(11),c(4:6)]
 head(metadata)
 ```
 
@@ -37,7 +37,7 @@ library(readr)
 
 
 ```{r}
-dds = DESeqDataSetFromMatrix(countData = fxr_data, colData = metadata, design = ~Phenotype)
+dds = DESeqDataSetFromMatrix(countData = fxr_data, colData = metadata, design = ~Diet)
 ```
 
 ```{r}
@@ -53,7 +53,7 @@ pheatmap(vsd_cor, annotation = select(metadata, c(Sex, Phenotype, Diet)))
 ```
 
 ```{r}
-plotPCA(vsd, intgroup = c("Phenotype", "Diet", "Sex"))
+plotPCA(vsd, intgroup = c("Phenotype", "Diet", "Sex")) + geom_label(aes(label = row.names(metadata)))
 ```
 
 ```{r}
@@ -63,37 +63,38 @@ meta_HFD = metadata[c(1:10),]
 
 
 ```{r}
-dds = DESeqDataSetFromMatrix(countData = only_HFD, colData = meta_HFD, design = ~Phenotype)
+dds_control = DESeqDataSetFromMatrix(countData = fxr_data[,c(1:10)], colData = metadata[c(1:10),], design = ~Phenotype)
 ```
 
 ```{r}
-vsd = vst(dds, blind = TRUE)
-vsd_mat = assay(vsd)
-vsd_cor = cor(vsd_mat)
+vsd_control = vst(dds_control, blind = TRUE)
+vsd_mat_control = assay(vsd_control)
+vsd_cor_control = cor(vsd_mat_control)
 ```
 
 ```{r}
 
-plotPCA(vsd, intgroup = c("Phenotype", "Sex"))
+plotPCA(vsd_control, intgroup = c("Phenotype", "Sex"))
 
 ```
 
 ```{r}
-dde = DESeq(dds)
-res = results(dde, contrast = c("Phenotype", "Liver KO", "WT"))
-res = lfcShrink(dde, contrast = c("Phenotype", "Liver KO", "WT"), res = res)
+dde_control = DESeq(dds_control)
+res_control = results(dde_control, contrast = c("Phenotype", "Liver KO", "WT"))
+res_control = lfcShrink(dde_control, contrast = c("Phenotype", "Liver KO", "WT"), res = res_control)
 ```
 
 extract the data and subset for differentially expressed genes
 
 ```{r}
-res = data.frame(res)
-res = subset(res, padj < 0.05)
+res_control = data.frame(res_control)
+res_control = subset(res_control, padj < 0.05)
 ```
 
 Write data to file
 ```{r}
-write.csv(res, "Liver KO vs WT HFD.csv")
+setwd("~/Desktop/FXR/Fxr/Data")
+write.csv(res_control, "Liver KO vs WT HFD.csv")
 ```
 
 
@@ -105,55 +106,56 @@ meta_XN = metadata[c(11:19),]
 ```
 
 ```{r}
-dds = DESeqDataSetFromMatrix(countData = only_XN, colData = meta_XN, design = ~Phenotype)
+dds_tx = DESeqDataSetFromMatrix(countData = fxr_data[,c(11:19)], colData = metadata[c(11:19),], design = ~Phenotype)
 ```
 ```{r}
-vsd = vst(dds, blind = TRUE)
-vsd_mat = assay(vsd)
-vsd_cor = cor(vsd_mat)
+vsd_tx = vst(dds_tx, blind = TRUE)
+vsd_mat_tx = assay(vsd_tx)
+vsd_cor_tx = cor(vsd_mat_tx)
 ```
 
 ```{r}
 
-plotPCA(vsd, intgroup = c("Phenotype", "Sex")) #+ geom_label(aes(label = row.names(meta_XN)))
+plotPCA(vsd_tx, intgroup = c("Phenotype", "Sex")) #+ geom_label(aes(label = row.names(meta_XN)))
 
 ```
 
 
 
 ```{r}
-dde = DESeq(dds)
-res = results(dde, contrast = c("Phenotype", "Liver KO", "WT"))
-res = lfcShrink(dde, contrast = c("Phenotype", "Liver KO", "WT"), res = res)
+dde_tx = DESeq(dds_tx)
+res_tx = results(dde_tx, contrast = c("Phenotype", "Liver KO", "WT"))
+res_tx = lfcShrink(dde_tx, contrast = c("Phenotype", "Liver KO", "WT"), res = res_tx)
 ```
 
 extract the data and subset for differentially expressed genes
 
 ```{r}
-res = data.frame(res)
-res = subset(res, padj < 0.05)
+res_tx = data.frame(res_tx)
+res_tx = subset(res_tx, padj < 0.05)
 ```
 
 Write data to file
 ```{r}
-write.csv(res, "Liver KO vs WT XN.csv")
+setwd("~/Desktop/FXR/Fxr/Data")
+write.csv(res_tx, "Liver KO vs WT XN.csv")
 ```
 
-Function to get entrezID from symbol
+Function to get Symbol from ensemblID
 Parameter:
   data: dataframe with gene symbol as row.names.
   keys: vector of symbols
 ```{r}
-symbol_entrezID = function(data, keys){
+ensemblID_symbol = function(data, keys){
   require(org.Mm.eg.db)
   require(tidyr)
   hash.table = drop_na(AnnotationDbi::select(org.Mm.eg.db,
                                    keys = keys,
                                    keytype = "ENSEMBL",
                                    columns = "SYMBOL"))
-  hash.table = drop_na(hash.table)
+  #hash.table = drop_na(hash.table)
   data_subset = data[hash.table$ENSEMBL, ]
-  data_subset$Symbol = as.character(hash.table$Symbol)
+  data_subset$Symbol = as.character(hash.table$SYMBOL)
   
   
   return(data_subset)
@@ -161,15 +163,30 @@ symbol_entrezID = function(data, keys){
 ```
 
 ```{r}
-HFD = read.csv("Liver KO vs WT HFD.csv", stringsAsFactors = FALSE, row.names = 1)
+setwd("~/Desktop/FXR/Fxr/Data")
+XN = read.csv("Liver KO vs WT XN.csv", stringsAsFactors = FALSE, row.names = 1)
 ```
 
 ```{r}
-emsemble = row.names(HFD)
+emsemble = row.names(XN)
 ```
 
 ```{r}
-new_data = symbol_entrezID(HFD, emsemble)
+new_data = ensemblID_symbol(XN, emsemble)
+```
+```{r}
+length(unique(new_data$Symbol))
+```
+
+```{r}
+ab = table(new_data$Symbol)
+ab[ab>1]
+```
+
+
+```{r}
+setwd("~/Desktop/FXR/Fxr/Data")
+write.csv(new_data, "Liver KO vs WT XN.csv")
 ```
 
 
