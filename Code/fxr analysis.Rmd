@@ -1,12 +1,15 @@
 ```{r}
-setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
-fxr_data = read.csv("gene_count_matrix.csv", header = TRUE, stringsAsFactors = FALSE)
-fxr_data = na.omit(fxr_data)
+setwd("~/Desktop/FXR analysis/Fxr/Data")
+fxr_data = na.omit(read.csv("gene count matrix.csv", header = TRUE, stringsAsFactors = FALSE))
 head(fxr_data)
 ```
 
 ```{r}
-row.names(fxr_data) = fxr_data$gene_id
+str(fxr_data$X)
+```
+
+```{r}
+row.names(fxr_data) = fxr_data$X
 fxr_data = fxr_data[,-1]
 head(fxr_data)
 ```
@@ -14,7 +17,7 @@ head(fxr_data)
 
 
 ```{r}
-setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
+setwd("~/Desktop/FXR analysis/Fxr/Data")
 design_file = read.csv("Liver_mRNA_Seq_sampleID.csv", stringsAsFactors = FALSE, row.names = 1)
 head(design_file)
 ```
@@ -112,7 +115,7 @@ vsd_cor = cor(vsd_mat)
 
 ```{r}
 
-plotPCA(vsd, intgroup = c("Phenotype", "Sex")) + geom_label(aes(label = row.names(meta_XN)))
+plotPCA(vsd, intgroup = c("Phenotype", "Sex")) #+ geom_label(aes(label = row.names(meta_XN)))
 
 ```
 
@@ -191,3 +194,115 @@ write.csv(HFD_XN, "merged de genes HFD and HFD_XN.csv")
 ```{r}
 length(unique(c(HFD$Symbol, XN$Symbol)))
 ```
+
+```{r}
+setwd("~/Desktop/FXR analysis/Fxr/Data")
+data = read.csv("merged de genes HFD and HFD_XN.csv", stringsAsFactors = FALSE, row.names = 1)
+head(data)
+```
+
+```{r}
+HFD_XN_only = data[(is.na(data$log2FC.HFD) & !(is.na(data$log2FC.XN))),]
+```
+
+```{r}
+setwd("~/Desktop/FXR analysis/Fxr/Data")
+write.csv(HFD_XN_only, "unique for HFD XN.csv")
+```
+
+```{r}
+HFD_only = data[((!is.na(data$log2FC.HFD)) & (is.na(data$log2FC.XN))),]
+```
+
+```{r}
+setwd("~/Desktop/FXR analysis/Fxr/Data")
+write.csv(HFD_only, "unique for HFD.csv")
+```
+
+```{r}
+shared = data[((!is.na(data$log2FC.HFD)) & !(is.na(data$log2FC.XN))),]
+```
+
+```{r}
+setwd("~/Desktop/FXR analysis/Fxr/Data")
+write.csv(shared, "shared between HFD and HFD+XN.csv")
+```
+
+```{r}
+only_WT = fxr_data[, c(1:10)]
+meta_HFD = metadata[c(1:10),]
+```
+
+
+```{r}
+dds = DESeqDataSetFromMatrix(countData = fxr_data[,c(1:6, 11:14)], colData = metadata[c(1:6, 11:14),], design = ~Diet)
+```
+
+
+```{r}
+vsd = vst(dds, blind = TRUE)
+vsd_mat = assay(vsd)
+vsd_cor = cor(vsd_mat)
+```
+
+```{r}
+
+plotPCA(vsd, intgroup = "Diet")
+
+```
+
+```{r}
+dde = DESeq(dds)
+res = results(dde, contrast = c("Diet", "HFD_XN", "HFD"))
+res = lfcShrink(dde, contrast = c("Diet", "HFD_XN", "HFD"), res = res)
+```
+
+extract the data and subset for differentially expressed genes
+
+```{r}
+res = data.frame(res)
+res = subset(res, padj < 0.05)
+```
+
+Write data to file
+```{r}
+setwd("~/Desktop/FXR analysis/Fxr/Data")
+write.csv(res, "WT XN vs HFD.csv")
+```
+
+```{r}
+dds = DESeqDataSetFromMatrix(countData = fxr_data[c(7:10, 15:19)], colData = metadata[c(7:10, 15:19),], design = ~Diet)
+```
+
+```{r}
+vsd = vst(dds, blind = TRUE)
+vsd_mat = assay(vsd)
+vsd_cor = cor(vsd_mat)
+```
+
+```{r}
+
+plotPCA(vsd, intgroup = "Diet")
+
+```
+
+```{r}
+dde = DESeq(dds)
+res = results(dde, contrast = c("Diet", "HFD_XN", "HFD"))
+res = lfcShrink(dde, contrast = c("Diet", "HFD_XN", "HFD"), res = res)
+```
+
+extract the data and subset for differentially expressed genes
+
+```{r}
+res = data.frame(res)
+res = subset(res, padj < 0.05)
+```
+
+Write data to file
+```{r}
+setwd("~/Desktop/FXR analysis/Fxr/Data")
+write.csv(res, "Liver KO XN vs HFD.csv")
+```
+
+
