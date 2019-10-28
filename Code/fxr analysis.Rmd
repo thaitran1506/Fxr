@@ -185,12 +185,13 @@ ab[ab>1]
 
 
 ```{r}
-setwd("~/Desktop/FXR/Fxr/Data")
+ setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
 write.csv(new_data, "Liver KO vs WT XN.csv")
 ```
 
 
 ```{r}
+setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
 HFD = read.csv("Liver KO vs WT HFD.csv", stringsAsFactors = FALSE)[,c(1,3)]
 XN = read.csv("Liver KO vs WT XN.csv", stringsAsFactors = FALSE)[,c(1,3)]
 ```
@@ -205,6 +206,36 @@ HFD_XN = merge(HFD, XN, by = "Symbol", all = TRUE)
 ```
 
 ```{r}
+row.names(HFD_XN) = HFD_XN$Symbol
+```
+
+
+```{r}
+ensemble_symbol = function(data, keys){
+  require(org.Mm.eg.db)
+  require(tidyr)
+  hash.table = drop_na(AnnotationDbi::select(org.Mm.eg.db,
+                                   keys = keys,
+                                   keytype = "ENSEMBL",
+                                   columns = "SYMBOL"))
+  hash.table = drop_na(hash.table)
+  data_subset = data[hash.table$ENSEMBL, ]
+  data_subset$EntrezID = as.character(hash.table$SYMBOL)
+  data_subset$Symbol = row.names(data_subset)
+  row.names(data_subset) = data_subset$SYMBOL
+  
+  
+  return(data_subset)
+}
+```
+
+```{r}
+HFD_XN = ensemble_symbol(HFD_XN, keys = row.names(HFD_XN))
+```
+
+
+```{r}
+setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
 write.csv(HFD_XN, "merged de genes HFD and HFD_XN.csv")
 ```
 
@@ -213,7 +244,7 @@ length(unique(c(HFD$Symbol, XN$Symbol)))
 ```
 
 ```{r}
-setwd("~/Desktop/FXR analysis/Fxr/Data")
+setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
 data = read.csv("merged de genes HFD and HFD_XN.csv", stringsAsFactors = FALSE, row.names = 1)
 head(data)
 ```
@@ -223,7 +254,7 @@ HFD_XN_only = data[(is.na(data$log2FC.HFD) & !(is.na(data$log2FC.XN))),]
 ```
 
 ```{r}
-setwd("~/Desktop/FXR analysis/Fxr/Data")
+setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
 write.csv(HFD_XN_only, "unique for HFD XN.csv")
 ```
 
@@ -232,7 +263,7 @@ HFD_only = data[((!is.na(data$log2FC.HFD)) & (is.na(data$log2FC.XN))),]
 ```
 
 ```{r}
-setwd("~/Desktop/FXR analysis/Fxr/Data")
+setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
 write.csv(HFD_only, "unique for HFD.csv")
 ```
 
@@ -241,7 +272,7 @@ shared = data[((!is.na(data$log2FC.HFD)) & !(is.na(data$log2FC.XN))),]
 ```
 
 ```{r}
-setwd("~/Desktop/FXR analysis/Fxr/Data")
+setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
 write.csv(shared, "shared between HFD and HFD+XN.csv")
 ```
 

@@ -1,5 +1,6 @@
 ```{r}
-setwd("~/Desktop/FXR/Fxr/Data")
+#setwd("~/Desktop/FXR/Fxr/Data")
+setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
 HFD = read.csv("Liver KO vs WT HFD.csv", stringsAsFactors = FALSE, header = TRUE)
 #tib = read.csv("tib-de-table-0.01c.csv", stringsAsFactors = FALSE, header = TRUE)
 ```
@@ -10,10 +11,6 @@ row.names(HFD) = HFD$Symbol
 
 
 
-```{r}
-colnames(HFD)[1] = c("Symbol")
-
-```
 
 ```{r}
 HFD = HFD[, c(8,3)]
@@ -58,92 +55,39 @@ head(de_genes_entrezID)
 ```
 
 
-only 1002 genes have entrez_ID
+only 999 genes have entrez_ID
 
-Read in the read count table to get the universal background gene
-```{r}
-setwd("~/Desktop/FXR/Fxr/Data")
-data = na.omit(read.csv("gene count.csv", header = TRUE, stringsAsFactors = FALSE, sep = ",", row.names = 1))
-head(data)
-```
+
 
 ```{r}
-row.names(data) = data$X
-```
-
-```{r}
-ensembl_entrezID = function(data, keys){
-  require(org.Mm.eg.db)
-  require(tidyr)
-  hash.table = drop_na(AnnotationDbi::select(org.Mm.eg.db,
-                                   keys = keys,
-                                   keytype = "ENSEMBL",
-                                   columns = "ENTREZID"))
-  #hash.table = drop_na(hash.table)
-  data_subset = data[hash.table$ENSEMBL, ]
-  data_subset$EntrezID = as.character(hash.table$ENTREZID)
-  data_subset$Ensembl = row.names(data_subset)
-  #row.names(data_subset) = data_subset$EntrezID
-  
-  
-  return(data_subset)
-}
-```
-
-```{r}
-gene_universe = data.frame(row.names(data))
-colnames(gene_universe)[1] = c("Symbol")
-row.names(gene_universe) = gene_universe$Symbol
-head(gene_universe)
-```
-
-```{r}
-gene_universe$holder = rep("x", length(gene_universe$Symbol))
+#Feature 1: numeric vector
+genelist_y = de_genes_entrezID$log2FoldChange[de_genes_entrezID$log2FoldChange>0]
+#Feature 2: named vector
+names(genelist_y) = as.character(de_genes_entrezID$EntrezID[de_genes_entrezID$log2FoldChange>0])
+#feature 3: decreasing order
+genelist = sort(genelist_y, decreasing = TRUE)
+head(genelist)
 ```
 
 
 ```{r}
-a = row.names(gene_universe)
+de_gene = names(genelist)
 ```
 
 ```{r}
-gene_universe = ensembl_entrezID(gene_universe, keys = row.names(gene_universe))
-
+enrich_y = enrichPathway(gene = de_gene, pvalueCutoff = 0.05, readable = T, organism = "mouse")
+head(as.data.frame(enrich_y))
 ```
 
 
 ```{r}
-gene_count = data[gene_universe$X, ]
-
+reactome = as.data.frame(enrich_y)
 ```
 
 ```{r}
-gene_count = gene_count[,-1]
-```
-
-```{r}
-write.csv(gene_count, "gene count.csv")
-```
-
-```{r}
-a = table(gene_universe$EntrezID)
-```
-
-```{r}
-sum(a[a > 1])
-```
-
-```{r}
-universe_entrezID = gene_universe$EntrezID
-```
-
-```{r}
-gene_count_matrix = ensembl_entrezID(gene_count_matrix, keys = row.names(gene_count_matrix))
-```
-
-```{r}
-setwd("~/Desktop/FXR analysis/Fxr/Data")
-write.csv(gene_count_matrix, "gene count matrix.csv")
+setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
+heatplot(enrich_y, foldChange = c(rep(1, length(genelist_y))))+ ggtitle("MT/WT HFD only upregulated genes")
+ggsave("MT_WT HFD up.png", height = 7, width = 28)
 ```
 
 ```{r}
@@ -172,87 +116,89 @@ reactome = as.data.frame(enrich_y)
 ```
 
 ```{r}
-setwd("~/Desktop/FXR analysis/Fxr/Data")
-heatplot(enrich_y, foldChange = genelist_y) + scale_fill_distiller(type = "div", palette = "RdBu", direction = -1)
-ggsave("reactomePA.png", height = 7, width = 28)
-```
-
-```{r}
-reactome = heatplot(enrich_y, foldChange = genelist_y) + scale_fill_gradient(low = "red", high = "blue")
+setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
+heatplot(enrich_y, foldChange = genelist_y) + ggtitle("MT/WT HFD all genes") + scale_fill_distiller(type = "div", palette = "RdBu", direction = -1)
+ggsave("MT_WT HFD all genes.png", height = 7, width = 28)
 ```
 
 
 ```{r}
-shared_gene_df$is_met = sol[shared, 7]
-head(shared_gene_df)
+#setwd("~/Desktop/FXR/Fxr/Data")
+setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
+HFD_XN_only = read.csv("unique for HFD XN.csv", stringsAsFactors = FALSE, header = TRUE, row.names = 1)
+#tib = read.csv("tib-de-table-0.01c.csv", stringsAsFactors = FALSE, header = TRUE)
+```
+
+
+Reactome pathway analysis
+
+```{r}
+library(ReactomePA)
+library(clusterProfiler)
+library(ggplot2)
+library(tidyverse)
+```
+
+Function to get entrezID from symbol
+Parameter:
+  data: dataframe with gene symbol as row.names.
+  keys: vector of symbols
+```{r}
+symbol_entrezID = function(data, keys){
+  require(org.Mm.eg.db)
+  require(tidyr)
+  hash.table = drop_na(AnnotationDbi::select(org.Mm.eg.db,
+                                   keys = keys,
+                                   keytype = "SYMBOL",
+                                   columns = "ENTREZID"))
+  hash.table = drop_na(hash.table)
+  data_subset = data[hash.table$SYMBOL, ]
+  data_subset$EntrezID = as.character(hash.table$ENTREZID)
+  data_subset$Symbol = row.names(data_subset)
+  row.names(data_subset) = data_subset$EntrezID
+  
+  
+  return(data_subset)
+}
 ```
 
 ```{r}
-metabolic_df = shared_gene_df[shared_gene_df$is_met == "Y",]
-length(metabolic_df$Symbol)
+de_genes_entrezID = symbol_entrezID(HFD_XN_only, keys = row.names(HFD))
+head(de_genes_entrezID)
 ```
 
-```{r}
-write.csv(metabolic_df, "shared metabolic genes.csv")
-```
+
+only 999 genes have entrez_ID
+
+
 
 ```{r}
-row.names(metabolic_df) = c(1:131)
-```
-
-```{r}
-metabolic_1_fold = metabolic_df[abs(metabolic_df$average_logFC) >= 1, ]
-```
-
-```{r}
-library(pheatmap)
-library(RColorBrewer)
-```
-
-```{r}
-
-jpeg("heat map of shared met genes.jpeg", width = 700, height = 2100)
-pheatmap(metabolic_df_2, treeheight_row = 0, treeheight_col = 0, color = colorRampPalette(rev(brewer.pal(10, "RdYlBu")))(30), fontsize_number = 1.5, cluster_rows = F)
-dev.off()
-```
-
-```{r}
-heatmap = pheatmap(metabolic_1_fold[,c(2,3)], treeheight_row = 0, treeheight_col = 0, color = colorRampPalette(rev(brewer.pal(10, "RdYlBu")))(30), fontsize_number = 1.5)
-```
-```{r}
-str(heatmap)
-```
-
-```{r}
-
-```
-
-```{r}
-metabolic_df_2 = metabolic_1_fold[rev(heatmap$tree_row$order),]
-```
-
-```{r}
-row.names(metabolic_df_2) = metabolic_df_2$Symbol
-```
-
-```{r}
-
-jpeg("heatmap shared met genes cutoff 2 fold.jpeg", width = 1000, height = 3000)
-pheatmap(metabolic_df_2[,c(2,3)], treeheight_row = 0, treeheight_col = 0, color = colorRampPalette(rev(brewer.pal(10, "RdBu")))(30), fontsize = 30, cluster_rows = F)
-dev.off()
-```
-```{r}
-write.csv(metabolic_1_fold, "shared met genes log2FC 1.csv")
+#Feature 1: numeric vector
+genelist_y = de_genes_entrezID$log2FC.XN[de_genes_entrezID$log2FC.XN<0]
+#Feature 2: named vector
+names(genelist_y) = as.character(de_genes_entrezID$EntrezID[de_genes_entrezID$log2FC.XN<0])
+#feature 3: decreasing order
+genelist = sort(genelist_y, decreasing = TRUE)
+head(genelist)
 ```
 
 
 ```{r}
-order_met_genes = read.csv("shared met genes log2FC 1.csv", stringsAsFactors = FALSE, row.names = 1)
-head(order_met_genes)
+de_gene = names(genelist)
 ```
-```{r}
 
-jpeg("heatmap shared met genes cutoff 2 fold.jpeg", width = 1000, height = 3000)
-pheatmap(order_met_genes[,c(2,3)], treeheight_row = 0, treeheight_col = 0, color = colorRampPalette(rev(brewer.pal(10, "RdBu")))(30), fontsize = 30, cluster_rows = F)
-dev.off()
+```{r}
+enrich_y = enrichPathway(gene = de_gene, pvalueCutoff = 0.05, readable = T, organism = "mouse")
+head(as.data.frame(enrich_y))
+```
+
+
+```{r}
+reactome = as.data.frame(enrich_y)
+```
+
+```{r}
+setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
+heatplot(enrich_y, foldChange = rep(1,length(genelist_y)))+ ggtitle("Reactome plot of downregulated genes (MT/WT) present only in the HFD+XN group") + scale_fill_distiller(type = "div", palette = "RdBu", direction = -1)
+ggsave("MT_WT HFD+XN unique downregulated genes.png", height = 7, width = 28)
 ```
