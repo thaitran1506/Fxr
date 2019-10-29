@@ -1,7 +1,7 @@
 ```{r}
-#setwd("~/Desktop/FXR/Fxr/Data")
-setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
-HFD = read.csv("Liver KO vs WT HFD.csv", stringsAsFactors = FALSE, header = TRUE)
+setwd("~/Desktop/FXR analysis/Fxr/Data")
+#setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
+HFD = read.csv("unique for HFD.csv", stringsAsFactors = FALSE, header = TRUE, row.names = 1)
 #tib = read.csv("tib-de-table-0.01c.csv", stringsAsFactors = FALSE, header = TRUE)
 ```
 
@@ -61,9 +61,9 @@ only 999 genes have entrez_ID
 
 ```{r}
 #Feature 1: numeric vector
-genelist_y = de_genes_entrezID$log2FoldChange[de_genes_entrezID$log2FoldChange>0]
+genelist_y = de_genes_entrezID$log2FC.HFD[de_genes_entrezID$log2FC.HFD>0]
 #Feature 2: named vector
-names(genelist_y) = as.character(de_genes_entrezID$EntrezID[de_genes_entrezID$log2FoldChange>0])
+names(genelist_y) = as.character(de_genes_entrezID$EntrezID[de_genes_entrezID$log2FC.HFD>0])
 #feature 3: decreasing order
 genelist = sort(genelist_y, decreasing = TRUE)
 head(genelist)
@@ -79,15 +79,19 @@ enrich_y = enrichPathway(gene = de_gene, pvalueCutoff = 0.05, readable = T, orga
 head(as.data.frame(enrich_y))
 ```
 
+```{r}
+enrich_y
+```
+
 
 ```{r}
 reactome = as.data.frame(enrich_y)
 ```
 
 ```{r}
-setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
-heatplot(enrich_y, foldChange = c(rep(1, length(genelist_y))))+ ggtitle("MT/WT HFD only upregulated genes")
-ggsave("MT_WT HFD up.png", height = 7, width = 28)
+setwd("~/Desktop/FXR analysis/Fxr/Data")
+heatplot(enrich_y, foldChange = genelist_y, showCategory = 15)+ ggtitle("reactome plot of upregulated genes present only in HFD")+ scale_fill_gradient(low = "pink", high = "red")
+ggsave("MT_WT HFD unique upregulated genes.png", height = 7, width = 28)
 ```
 
 ```{r}
@@ -124,7 +128,7 @@ ggsave("MT_WT HFD all genes.png", height = 7, width = 28)
 
 ```{r}
 #setwd("~/Desktop/FXR/Fxr/Data")
-setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
+setwd("~/Desktop/FXR analysis/Fxr/Data")
 HFD_XN_only = read.csv("unique for HFD XN.csv", stringsAsFactors = FALSE, header = TRUE, row.names = 1)
 #tib = read.csv("tib-de-table-0.01c.csv", stringsAsFactors = FALSE, header = TRUE)
 ```
@@ -163,7 +167,7 @@ symbol_entrezID = function(data, keys){
 ```
 
 ```{r}
-de_genes_entrezID = symbol_entrezID(HFD_XN_only, keys = row.names(HFD))
+de_genes_entrezID = symbol_entrezID(HFD_XN_only, keys = row.names(HFD_XN_only))
 head(de_genes_entrezID)
 ```
 
@@ -198,7 +202,7 @@ reactome = as.data.frame(enrich_y)
 ```
 
 ```{r}
-setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
-heatplot(enrich_y, foldChange = rep(1,length(genelist_y)))+ ggtitle("Reactome plot of downregulated genes (MT/WT) present only in the HFD+XN group") + scale_fill_distiller(type = "div", palette = "RdBu", direction = -1)
+setwd("~/Desktop/FXR analysis/Fxr/Data")
+heatplot(enrich_y, foldChange = genelist_y)+ ggtitle("Reactome plot of downregulated genes (MT/WT) present only in the HFD+XN group") + scale_fill_gradient(low = "blue", high = "white")
 ggsave("MT_WT HFD+XN unique downregulated genes.png", height = 7, width = 28)
 ```
