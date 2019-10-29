@@ -244,7 +244,7 @@ length(unique(c(HFD$Symbol, XN$Symbol)))
 ```
 
 ```{r}
-setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
+setwd("~/Desktop/FXR analysis/Fxr/Data")
 data = read.csv("merged de genes HFD and HFD_XN.csv", stringsAsFactors = FALSE, row.names = 1)
 head(data)
 ```
@@ -272,7 +272,7 @@ shared = data[((!is.na(data$log2FC.HFD)) & !(is.na(data$log2FC.XN))),]
 ```
 
 ```{r}
-setwd("C:/Users/trant/Desktop/FXR/Fxr/Data")
+setwd("~/Desktop/FXR analysis/Fxr/Data")
 write.csv(shared, "shared between HFD and HFD+XN.csv")
 ```
 

@@ -2,7 +2,7 @@
 
 
 ```{r}
-setwd("C:/Users/trant/Desktop/New folder (2)/Fxr/Fxr/Data")
+setwd("~/Desktop/FXR analysis/Fxr/Data")
 #setwd("~/Desktop/FXR analysis/Fxr/Data")
 shared = read.csv("shared between HFD and HFD+XN.csv", row.names = 1, stringsAsFactors = FALSE)
 head(shared)
@@ -17,6 +17,10 @@ library(RColorBrewer)
 
 ```{r}
 heatmap = pheatmap(shared_2, treeheight_col = 0, color = colorRampPalette(rev(brewer.pal(10, "RdYlBu")))(30), fontsize_number = 1.5, cluster_rows = F)
+```
+```{r}
+dist = dist(shared)
+hc = hclust(dist, method = "ward.D2")
 ```
 
 ```{r}
@@ -39,10 +43,10 @@ row.names(metabolic_df_2) = metabolic_df_2$Symbol
 ```
 
 ```{r}
-setwd("C:/Users/trant/Desktop/New folder (2)/Fxr/Fxr/Data")
+setwd("~/Desktop/FXR analysis/Fxr/Data")
 #setwd("~/Desktop/FXR analysis/Fxr/Data")
 jpeg("heat map of shared genes.jpeg", width = 1000, height = 3000)
-pheatmap(shared_2, treeheight_row = 0, treeheight_col = 0, color = colorRampPalette(rev(brewer.pal(10, "RdYlBu")))(30), fontsize_number = 4, cluster_rows = F)
+pheatmap(shared_2, treeheight_row = 0, treeheight_col = 0, color = colorRampPalette(rev(brewer.pal(10, "RdYlBu")))(30), fontsize_number = 1000, cluster_rows = F)
 dev.off()
 ```
 
